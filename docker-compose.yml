@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: darkwatch-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - darkwatch-network
+
+  backend:
+    build: ./backend
+    container_name: darkwatch-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - MONGO_URI=mongodb://mongodb:27017/darkwatch
+      - JWT_SECRET=darkwatch_ultra_secure_jwt_token_secret_key_1337
+      - AI_SERVICE_URL=http://ai-service:8000
+    depends_on:
+      - mongodb
+    networks:
+      - darkwatch-network
+
+  ai-service:
+    build: ./ai-service
+    container_name: darkwatch-ai-service
+    ports:
+      - "8000:8000"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-""}
+      - HOST=0.0.0.0
+      - PORT=8000
+    networks:
+      - darkwatch-network
+
+  frontend:
+    build: ./frontend
+    container_name: darkwatch-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - darkwatch-network
+
+volumes:
+  mongo-data:
+
+networks:
+  darkwatch-network:
+    driver: bridge
